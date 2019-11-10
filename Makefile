@@ -1,4 +1,4 @@
-VERSION := 10.1.0
+VERSION := 10.2.0
 MAJOR_VERSION := $(shell echo $(VERSION) | cut -d'.' -f1)
 
 # installation directory (/usr/local by default)
@@ -28,11 +28,12 @@ else ifeq ($(OS),Darwin)
 	LIB_MAJOR := $(BASENAME)-$(MAJOR_VERSION).dylib
 	LIB_VERSION := $(BASENAME)-$(VERSION).dylib
 	LINKER_FLAGS := -Wl,-install_name,$(LIB_VERSION)
+	DESTDIR := /usr/local/etc/cs50
 endif
 
 LIBS := $(addprefix build/lib/, $(LIB_BASE) $(LIB_MAJOR) $(LIB_VERSION))
 
-.PHONY: all
+.PHONY: all test
 all: $(LIBS) $(MANS)
 
 $(LIBS): $(SRC) $(INCLUDE) Makefile
@@ -55,6 +56,12 @@ install: all
 
 ifeq ($(OS),Linux)
 	ldconfig $(DESTDIR)/lib
+endif
+
+ifeq ($(OS),Darwin)
+	ln -sf $(DESTDIR)/include/* /usr/local/include
+	ln -sf $(DESTDIR)/lib/* /usr/local/lib
+	ln -sf $(DESTDIR)/$(MANDIR)/* /usr/local/$(MANDIR)
 endif
 
 .PHONY: clean
@@ -141,3 +148,10 @@ uninstall:
 	rm -rf $(DESTDIR)/src/cs50.c
 	rm -f $(addprefix $(DESTDIR)/lib/, $(LIB_BASE) $(LIB_MAJOR) $(LIB_VERSION))
 	rm -f $(addprefix $(DESTDIR)/$(MANDIR)/, eprintf.3 get_*.3)
+
+ifeq ($(OS),Darwin)
+	rm -rf $(DESTDIR)
+	find -L /usr/local/include -type l -exec rm -v {} +
+	find -L /usr/local/lib -type l -exec rm -v {} +
+	find -L /usr/local/share -type l -exec rm -v {} +
+endif
